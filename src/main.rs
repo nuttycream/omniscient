@@ -8,7 +8,8 @@ use axum::{
         WebSocketUpgrade,
         ws::{Message, WebSocket},
     },
-    response::{IntoResponse, Response},
+    http::header,
+    response::{Html, IntoResponse, Response},
     routing::{any, get},
 };
 use futures::{SinkExt, StreamExt};
@@ -25,6 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let addr = format!("0.0.0.0:{port}");
     let app = Router::new()
         .route("/", get(serve_html))
+        .route("/style.css", get(serve_css))
         .route("/ws", any(handle_websocket));
 
     let mut listenfd = ListenFd::from_env();
@@ -124,4 +126,12 @@ fn process_message(msg: Message) -> ControlFlow<(), ()> {
     }
 }
 
-async fn serve_html() -> impl IntoResponse {}
+async fn serve_html() -> Html<&'static str> {
+    let html = include_str!("./assets/index.html");
+    Html(html)
+}
+
+async fn serve_css() -> impl IntoResponse {
+    let css = include_str!("./assets/style.css");
+    ([(header::CONTENT_TYPE, "text/css")], css)
+}

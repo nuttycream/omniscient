@@ -1,0 +1,17 @@
+:root {
+    --border: gray;
+    --bg: black;
+    --text: white;
+    --primary: green;
+    --primary-hover: darkgreen;
+    --danger: red;
+    --danger-hover: darkred;
+    --info: lightblue;
+    --error: crimson;
+    --radius: 5px;
+    --spacing: 10px;
+}
+
+body {
+    font-family: 'Courier New', monospace;
+}
