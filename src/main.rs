@@ -1,6 +1,17 @@
-use std::{env, error::Error, net::SocketAddr};
+use std::{
+    env, error::Error, net::SocketAddr, ops::ControlFlow,
+};
 
-use axum::{Router, response::IntoResponse, routing::get};
+use axum::{
+    Router,
+    extract::{
+        WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
+    response::{IntoResponse, Response},
+    routing::{any, get},
+};
+use futures::{SinkExt, StreamExt};
 use listenfd::ListenFd;
 use tokio::net::TcpListener;
 
@@ -12,7 +23,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(3000);
 
     let addr = format!("0.0.0.0:{port}");
-    let app = Router::new().route("/", get(serve_html));
+    let app = Router::new()
+        .route("/", get(serve_html))
+        .route("/ws", any(handle_websocket));
 
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
@@ -38,6 +51,77 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .await?;
 
     Ok(())
+}
+
+async fn handle_websocket(
+    ws: WebSocketUpgrade,
+) -> Response {
+    ws.on_upgrade(handle_socket)
+}
+
+async fn handle_socket(socket: WebSocket) {
+    println!("ws connection opened");
+    let (mut sender, mut receiver) = socket.split();
+
+    let mut send_task = tokio::spawn(async move {
+        if sender
+            .send(Message::text("huwat"))
+            .await
+            .is_err()
+        {}
+    });
+
+    let mut recv_task = tokio::spawn(async move {
+        while let Some(Ok(msg)) = receiver.next().await {
+            if process_message(msg).is_break() {
+                break;
+            }
+        }
+    });
+
+    tokio::select! {
+        rv_a = (&mut send_task) => {
+            match rv_a {
+                Ok(_) => println!("messages sent"),
+                Err(a) => println!("Error sending messages {a:?}")
+            }
+            recv_task.abort();
+        },
+        rv_b = (&mut recv_task) => {
+            match rv_b {
+                Ok(_) => println!("received messages"),
+                Err(b) => println!("Error receiving messages {b:?}")
+            }
+            send_task.abort();
+        }
+    }
+
+    println!("ws connection closed");
+}
+
+fn process_message(msg: Message) -> ControlFlow<(), ()> {
+    match msg {
+        Message::Text(t) => {
+            println!("got a text message {}", t);
+            ControlFlow::Continue(())
+        }
+        Message::Binary(_) => ControlFlow::Continue(()),
+        Message::Ping(_) => ControlFlow::Continue(()),
+        Message::Pong(_) => ControlFlow::Continue(()),
+        Message::Close(close_frame) => {
+            if let Some(cf) = close_frame {
+                println!(
+                    "close with code {} with reason `{}`",
+                    cf.code, cf.reason
+                );
+            } else {
+                println!(
+                    "sent close msg without closeframe"
+                );
+            }
+            ControlFlow::Break(())
+        }
+    }
 }
 
 async fn serve_html() -> impl IntoResponse {}
