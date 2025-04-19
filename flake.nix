@@ -1,5 +1,5 @@
 {
-  description = "A basic Rust flake";
+  description = "simple rust flake";
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
@@ -19,64 +19,37 @@
       inherit system;
       overlays = [rust-overlay.overlays.default self.overlays.default];
     };
-  in {
-    overlays.default = final: prev: {
-      rustToolchain = let
-        rust = prev.rust-bin;
-      in
-        if builtins.pathExists ./rust-toolchain.toml
-        then rust.fromRustupToolchainFile ./rust-toolchain.toml
-        else if builtins.pathExists ./rust-toolchain
-        then rust.fromRustupToolchainFile ./rust-toolchain
-        else
-          rust.stable.latest.default.override {
-            extensions = ["rust-src" "rust-analyzer" "rustfmt"];
-          };
+
+    aarch64-pkgs = import nixpkgs {
+      inherit system;
+      crossSystem = {
+        config = "aarch64-unknown-linux-gnu";
+      };
     };
 
-    devShell.${system} = let
-      targetName = {
-        musl = "aarch64-unknown-linux-gnu";
-      };
+    aarch64-cc = "${aarch64-pkgs.stdenv.cc}/bin/aarch64-unknown-linux-gnu-cc";
+  in {
+    overlays.default = final: prev: {
+      rustToolchain =
+        prev.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+    };
 
-      pkgsCross = builtins.mapAttrs (name: value:
-        import pkgs.path {
-          system = system;
-          crossSystem = {
-            config = value;
-          };
-        })
-      targetName;
+    devShell.${system} = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        rustToolchain
+        pkg-config
+        openssl
+        cargo-watch
+        systemfd
+        qemu
+        aarch64-pkgs.stdenv.cc
+      ];
 
-      ccPkgs = builtins.mapAttrs (name: value: value.stdenv.cc) pkgsCross;
-    in
-      pkgs.mkShell {
-        buildInputs = with pkgs;
-          [
-            rustToolchain
-            rust-analyzer
-            cmake
-            pkg-config
-            openssl
-            cargo-deny
-            cargo-edit
-            cargo-watch
-            systemfd
-            qemu
-          ]
-          ++ builtins.attrValues ccPkgs;
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = aarch64-cc;
 
-        CARGO_BUILD_TARGET = let
-          toolchainStr = builtins.readFile ./rust-toolchain.toml;
-          targets = (builtins.fromTOML toolchainStr).toolchain.targets;
-        in
-          builtins.head targets;
-
-        RUST_SRC_PATH = "${pkgs.rustToolchain}/lib/rustlib/src/rust/library";
-
-        shellHook = ''
-          export PATH=$PATH:$HOME/.cargo/bin
-        '';
-      };
+      shellHook = ''
+        export PATH=$PATH:$HOME/.cargo/bin
+      '';
+    };
   };
 }
