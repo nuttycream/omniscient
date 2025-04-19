@@ -5,3 +5,15 @@ edition = "2024"
 
 [dependencies]
 nix = "0.29.0"
+axum = { version = "0.8.1", features = ["ws"] }
+futures = "0.3.31"
+serde = { version = "1.0.219", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+listenfd = "1.0.2"
+
+[profile.release]
+strip = true
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
