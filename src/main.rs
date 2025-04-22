@@ -103,7 +103,7 @@ async fn handle_socket(socket: WebSocket) {
         {}
     });
 
-    let shared = match open_shared_mem() {
+    let _ = match open_shared_mem() {
         Ok(mem) => {
             println!("opened shared mem");
             mem
