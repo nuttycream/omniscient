@@ -17,6 +17,9 @@ flowchart TD
 
 ```c
 typedef struct {
-
+    int ver;
+    int direction;
+    int motor_power[3];
+    int obstacle;
 } Shared;
 ```
