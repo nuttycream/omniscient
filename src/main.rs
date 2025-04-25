@@ -31,6 +31,7 @@ struct Shared {
     ver: i32,
     direction: i32,
     motor_power: [i32; 3],
+    obstacle: i32,
 }
 
 // should this be open
@@ -159,6 +160,10 @@ async fn handle_socket(socket: WebSocket) {
                     format!(
                         "<div id=\"direction\" hx-swap-ws=\"innerHTML\">{}</div>",
                         direction_text
+                    ),
+                    format!(
+                        "<div id=\"obstacle\" hx-swap-ws=\"innerHTML\">{}</div>",
+                        shared.obstacle
                     ),
                     format!(
                         "<div id=\"motorA\" hx-swap-ws=\"innerHTML\">{}</div>",
