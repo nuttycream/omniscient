@@ -8,6 +8,17 @@
         <script src="htmx.js"></script>
     </head>
     <body hx-ext="ws" ws-connect="/ws">
-    
+        <h2>direction</h2>
+        <div id="direction" hx-swap-ws="innerHTML">-</div>
+
+        <h2>motor a</h2>
+        <div id="motorA" hx-swap-ws="innerHTML">0</div>
+
+        <h2>motor b</h2>
+        <div id="motorB" hx-swap-ws="innerHTML">0</div>
+
+        <h2>motor c</h2>
+        <div id="motorC" hx-swap-ws="innerHTML">0</div>
+
     </body>
 </html>

@@ -1,5 +1,6 @@
 use std::{
     env, error::Error, net::SocketAddr, ops::ControlFlow,
+    thread::sleep, time::Duration,
 };
 
 use axum::{
@@ -15,7 +16,12 @@ use axum::{
 use futures::{SinkExt, StreamExt};
 use listenfd::ListenFd;
 use shared_memory::{Shmem, ShmemConf};
-use tokio::net::TcpListener;
+use std::mem::size_of;
+use tokio::{
+    net::TcpListener,
+    sync::{mpsc, watch},
+    task,
+};
 
 //https://github.com/elast0ny/shared_memory/blob/master/examples
 
@@ -29,7 +35,7 @@ struct Shared {
 
 // should this be open
 // the entire time web server
-// is running??
+// is running?
 fn open_shared_mem() -> Result<Shmem, Box<dyn Error>> {
     let mem = ShmemConf::new()
         .os_id("omnigod")
@@ -95,24 +101,99 @@ async fn handle_socket(socket: WebSocket) {
     println!("ws connection opened");
     let (mut sender, mut receiver) = socket.split();
 
-    let mut send_task = tokio::spawn(async move {
-        if sender
-            .send(Message::text("huwat"))
-            .await
-            .is_err()
-        {}
+    let (tx, mut rx) = mpsc::channel(100);
+
+    let (shutdown_tx, shutdown_rx) = watch::channel(false);
+
+    // C-c to the shutdown channel
+    let shut_rx_clone = shutdown_rx.clone();
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.ok();
+        let _ = shutdown_tx.send(true);
+        println!("Shutdown signal sent");
     });
 
-    let _ = match open_shared_mem() {
-        Ok(mem) => {
-            println!("opened shared mem");
-            mem
+    // since shmem doesnt use Send
+    // we have to spawn a blocking thread
+    // shouldnt be that much of an issue for this
+    // project tbh
+    let read_task = task::spawn_blocking(move || {
+        let shutdown_rx = shut_rx_clone;
+        let mem = match open_shared_mem() {
+            Ok(mem) => {
+                println!("opened shared mem");
+                mem
+            }
+            Err(e) => {
+                println!("failed to open shared mem: {e}");
+                return;
+            }
+        };
+
+        let mut last_ver = -1;
+
+        loop {
+            if *shutdown_rx.borrow() {
+                println!("blocking thread got shutdown");
+                break;
+            }
+
+            sleep(Duration::from_millis(100));
+
+            let shared = read_shared_mem(&mem);
+
+            if shared.ver != last_ver {
+                last_ver = shared.ver;
+
+                let direction_text = match shared.direction
+                {
+                    0 => "FORWARD",
+                    1 => "BACKWARD",
+                    2 => "STRAFE_LEFT",
+                    3 => "STRAFE_RIGHT",
+                    _ => "STOPPED",
+                };
+
+                let msgs = vec![
+                    // <div id="target" hx-swap-ws="innerHTML">value</div>
+                    format!(
+                        "<div id=\"direction\" hx-swap-ws=\"innerHTML\">{}</div>",
+                        direction_text
+                    ),
+                    format!(
+                        "<div id=\"motorA\" hx-swap-ws=\"innerHTML\">{}</div>",
+                        shared.motor_power[0]
+                    ),
+                    format!(
+                        "<div id=\"motorB\" hx-swap-ws=\"innerHTML\">{}</div>",
+                        shared.motor_power[1]
+                    ),
+                    format!(
+                        "<div id=\"motorC\" hx-swap-ws=\"innerHTML\">{}</div>",
+                        shared.motor_power[2]
+                    ),
+                ];
+                for msg in msgs {
+                    if tx.blocking_send(msg).is_err() {
+                        return;
+                    }
+                }
+            }
         }
-        Err(e) => {
-            println!("failed to open shared mem: {}", e);
-            return;
+    });
+
+    // relay messages from channel to websocket
+    let mut send_task = tokio::spawn(async move {
+        while let Some(msg) = rx.recv().await {
+            if sender
+                .send(Message::Text(msg.into()))
+                .await
+                .is_err()
+            {
+                break;
+            }
         }
-    };
+    });
 
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
@@ -123,6 +204,12 @@ async fn handle_socket(socket: WebSocket) {
     });
 
     tokio::select! {
+        // task to read from shared mem
+        _ = read_task => {
+            println!("read task completed");
+            send_task.abort();
+            recv_task.abort();
+        },
         rv_a = (&mut send_task) => {
             match rv_a {
                 Ok(_) => println!("messages sent"),
