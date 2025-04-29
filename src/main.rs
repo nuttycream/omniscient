@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let port = env::args()
         .nth(1)
         .and_then(|arg| arg.parse::<i32>().ok())
-        .unwrap_or(3000);
+        .unwrap_or(3001);
     let addr = format!("0.0.0.0:{port}");
 
     let app = Router::new()
