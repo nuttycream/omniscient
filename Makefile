@@ -30,7 +30,7 @@ remote: release
 	rsync -az $(ROOTNAME) $(REMOTE_HOST):$(REMOTE_DIR)/
 
 watch:
-	systemfd --no-pid -s http::3000 -- cargo watch -w src/ -x run
+	systemfd --no-pid -s http::3001 -- cargo watch -w src/ -x run
 
 install-service:
 	rsync -az omniscient.service $(REMOTE_HOST):$(REMOTE_DIR)/
