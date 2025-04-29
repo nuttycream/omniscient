@@ -120,17 +120,8 @@ async fn handle_socket(socket: WebSocket) {
     // project tbh
     let read_task = task::spawn_blocking(move || {
         let shutdown_rx = shut_rx_clone;
-        let mem = match open_shared_mem() {
-            Ok(mem) => {
-                println!("opened shared mem");
-                mem
-            }
-            Err(e) => {
-                println!("failed to open shared mem: {e}");
-                return;
-            }
-        };
-
+        let mut mem_available = false;
+        let mut mem = None;
         let mut last_ver = -1;
 
         loop {
@@ -139,51 +130,90 @@ async fn handle_socket(socket: WebSocket) {
                 break;
             }
 
-            sleep(Duration::from_millis(100));
-
-            let shared = read_shared_mem(&mem);
-
-            if shared.ver != last_ver {
-                last_ver = shared.ver;
-
-                let direction_text = match shared.direction
-                {
-                    0 => "FORWARD",
-                    1 => "BACKWARD",
-                    2 => "STRAFE_LEFT",
-                    3 => "STRAFE_RIGHT",
-                    _ => "STOPPED",
-                };
-
-                let msgs = vec![
-                    // <div id="target" hx-swap-ws="innerHTML">value</div>
-                    format!(
-                        "<div id=\"direction\" hx-swap-ws=\"innerHTML\">{}</div>",
-                        direction_text
-                    ),
-                    format!(
-                        "<div id=\"obstacle\" hx-swap-ws=\"innerHTML\">{}</div>",
-                        shared.obstacle
-                    ),
-                    format!(
-                        "<div id=\"motorA\" hx-swap-ws=\"innerHTML\">{}</div>",
-                        shared.motor_power[0]
-                    ),
-                    format!(
-                        "<div id=\"motorB\" hx-swap-ws=\"innerHTML\">{}</div>",
-                        shared.motor_power[1]
-                    ),
-                    format!(
-                        "<div id=\"motorC\" hx-swap-ws=\"innerHTML\">{}</div>",
-                        shared.motor_power[2]
-                    ),
-                ];
-                for msg in msgs {
-                    if tx.blocking_send(msg).is_err() {
-                        return;
+            // periodically checks if shared mem can be read
+            // 5 sec default
+            if !mem_available {
+                match open_shared_mem() {
+                    Ok(opened_mem) => {
+                        println!("opened shared mem");
+                        mem = Some(opened_mem);
+                        mem_available = true;
+                    }
+                    Err(e) => {
+                        println!(
+                            "waiting for shared memory: {e}"
+                        );
+                        sleep(Duration::from_secs(5));
+                        continue;
                     }
                 }
             }
+            if mem_available {
+                // unwrap should be safe here
+                // because we set mem
+                let shared_mem = mem.as_ref().unwrap();
+
+                let shared_result =
+                    std::panic::catch_unwind(|| {
+                        read_shared_mem(shared_mem)
+                    });
+
+                if let Ok(shared) = shared_result {
+                    if shared.ver != last_ver {
+                        last_ver = shared.ver;
+
+                        let direction_text =
+                            match shared.direction {
+                                0 => "FORWARD",
+                                1 => "BACKWARD",
+                                2 => "STRAFE_LEFT",
+                                3 => "STRAFE_RIGHT",
+                                _ => "STOPPED",
+                            };
+
+                        let msgs = vec![
+                            // <div id="target" hx-swap-ws="innerHTML">value</div>
+                            format!(
+                                "<div id=\"direction\" hx-swap-ws=\"innerHTML\">{}</div>",
+                                direction_text
+                            ),
+                            format!(
+                                "<div id=\"obstacle\" hx-swap-ws=\"innerHTML\">{}</div>",
+                                shared.obstacle
+                            ),
+                            format!(
+                                "<div id=\"motorA\" hx-swap-ws=\"innerHTML\">{}</div>",
+                                shared.motor_power[0]
+                            ),
+                            format!(
+                                "<div id=\"motorB\" hx-swap-ws=\"innerHTML\">{}</div>",
+                                shared.motor_power[1]
+                            ),
+                            format!(
+                                "<div id=\"motorC\" hx-swap-ws=\"innerHTML\">{}</div>",
+                                shared.motor_power[2]
+                            ),
+                        ];
+                        for msg in msgs {
+                            if tx
+                                .blocking_send(msg)
+                                .is_err()
+                            {
+                                return;
+                            }
+                        }
+                    }
+                } else {
+                    println!(
+                        "shared mem gone trying to reopen"
+                    );
+                    mem_available = false;
+                    mem = None;
+                    sleep(Duration::from_secs(1));
+                }
+            }
+
+            sleep(Duration::from_millis(100));
         }
     });
 
