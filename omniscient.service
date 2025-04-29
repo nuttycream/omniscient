@@ -1,0 +1,13 @@
+[Unit]
+Description=Omniscient
+After=network.target
+
+[Service]
+ExecStart=/home/pi08/omniscient/omniscient
+Restart=always
+Type=simple
+User=pi08
+WorkingDirectory=/home/pi08/omniscient
+
+[Install]
+WantedBy=multi-user.target

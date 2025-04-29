@@ -31,3 +31,19 @@ remote: release
 
 watch:
 	systemfd --no-pid -s http::3000 -- cargo watch -w src/ -x run
+
+install-service:
+	rsync -az omniscient.service $(REMOTE_HOST):$(REMOTE_DIR)/
+	ssh $(REMOTE_HOST) "sudo cp $(REMOTE_DIR)/omniscient.service /etc/systemd/system/ && sudo systemctl daemon-reload"
+
+enable-service:
+	ssh $(REMOTE_HOST) "sudo systemctl enable omniscient.service"
+
+start-service:
+	ssh $(REMOTE_HOST) "sudo systemctl start omniscient.service"
+
+restart-service:
+	ssh $(REMOTE_HOST) "sudo systemctl restart omniscient.service"
+
+deploy: remote install-service restart-service
+
