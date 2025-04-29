@@ -236,13 +236,6 @@ async fn handle_socket(socket: WebSocket) {
 
 fn process_message(msg: Message) -> ControlFlow<(), ()> {
     match msg {
-        Message::Text(t) => {
-            println!("got a text message {}", t);
-            ControlFlow::Continue(())
-        }
-        Message::Binary(_) => ControlFlow::Continue(()),
-        Message::Ping(_) => ControlFlow::Continue(()),
-        Message::Pong(_) => ControlFlow::Continue(()),
         Message::Close(close_frame) => {
             if let Some(cf) = close_frame {
                 println!(
@@ -256,6 +249,7 @@ fn process_message(msg: Message) -> ControlFlow<(), ()> {
             }
             ControlFlow::Break(())
         }
+        _ => ControlFlow::Continue(()),
     }
 }
 
