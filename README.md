@@ -21,5 +21,10 @@ typedef struct {
     int direction;
     int motor_power[3];
     int obstacle;
+
+    int go_left;
+    int go_right;
+
+    int sensors[4];
 } Shared;
 ```

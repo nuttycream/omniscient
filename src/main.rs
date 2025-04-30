@@ -32,6 +32,11 @@ struct Shared {
     direction: i32,
     motor_power: [i32; 3],
     obstacle: i32,
+
+    go_left: i32,
+    go_right: i32,
+
+    sensors: [i32; 4],
 }
 
 // should this be open
