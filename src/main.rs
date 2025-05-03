@@ -1,6 +1,12 @@
+mod sound;
+
 use std::{
-    env, error::Error, net::SocketAddr, ops::ControlFlow,
-    thread::sleep, time::Duration,
+    env,
+    error::Error,
+    net::SocketAddr,
+    ops::ControlFlow,
+    thread::{self, sleep},
+    time::Duration,
 };
 
 use axum::{
@@ -15,7 +21,9 @@ use axum::{
 };
 use futures::{SinkExt, StreamExt};
 use listenfd::ListenFd;
+use rand::Rng;
 use shared_memory::{Shmem, ShmemConf};
+use sound::{get_sounds, play_chicken};
 use std::mem::size_of;
 use tokio::{
     net::TcpListener,
@@ -37,6 +45,30 @@ struct Shared {
     go_right: i32,
 
     sensors: [i32; 4],
+}
+
+// goofy ahh sounds
+// randomly play mc
+// chicken sfx
+struct Sounds {
+    sounds: Vec<String>,
+}
+
+impl Sounds {
+    fn new(assets: &str) -> Self {
+        let sounds = get_sounds(assets);
+        println!("got them sounds boss");
+        Self { sounds }
+    }
+
+    fn play_rand(&self) {
+        let sounds = self.sounds.clone();
+        thread::spawn(move || {
+            if let Err(e) = play_chicken(&sounds) {
+                println!("{e}");
+            }
+        });
+    }
 }
 
 // should this be open
@@ -64,6 +96,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .and_then(|arg| arg.parse::<i32>().ok())
         .unwrap_or(3001);
     let addr = format!("0.0.0.0:{port}");
+
+    let chicken = Sounds::new("src/assets");
+
+    thread::spawn(move || {
+        loop {
+            let mut rng = rand::rng();
+            chicken.play_rand();
+            let wait_time = rng.random_range(5..=20);
+            for _ in 0..wait_time {
+                thread::sleep(Duration::from_millis(500));
+            }
+        }
+    });
 
     let app = Router::new()
         .route("/", get(serve_html))

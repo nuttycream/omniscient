@@ -37,6 +37,7 @@
     devShell.${system} = pkgs.mkShell {
       buildInputs = with pkgs; [
         rustToolchain
+        alsa-lib
         pkg-config
         openssl
         cargo-watch
