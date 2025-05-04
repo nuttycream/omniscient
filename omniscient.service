@@ -3,11 +3,11 @@ Description=Omniscient
 After=network.target
 
 [Service]
-ExecStart=/home/pi08/omniscient/omniscient
+ExecStart=/home/pi70/omniscient/omniscient
 Restart=always
 Type=simple
 User=root
-WorkingDirectory=/home/pi08/omniscient
+WorkingDirectory=/home/pi70/omniscient
 
 [Install]
 WantedBy=multi-user.target
