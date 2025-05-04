@@ -97,7 +97,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(3001);
     let addr = format!("0.0.0.0:{port}");
 
-    let chicken = Sounds::new("src/assets");
+    // multiple asset paths
+    // because ynaut
+    let asset_paths = vec![
+        "src/assets",
+        "assets",
+        "../assets",
+        "./assets",
+    ];
+
+    let mut chicken = None;
+    for path in asset_paths {
+        let sounds = get_sounds(path);
+        if !sounds.is_empty() {
+            chicken = Some(Sounds { sounds });
+            println!("Using assets from: {}", path);
+            break;
+        }
+    }
+
+    let chicken = chicken.unwrap_or_else(|| {
+        println!("WARNING: No chicken sounds found!");
+        Sounds { sounds: vec![] }
+    });
 
     thread::spawn(move || {
         loop {
