@@ -39,10 +39,13 @@ struct Shared {
     ver: i32,
     direction: i32,
     motor_power: [i32; 3],
+    bot_mode: i32,
+
     obstacle: i32,
 
     go_left: i32,
     go_right: i32,
+    sensor_mode: i32,
 
     sensors: [i32; 4],
 }
