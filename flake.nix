@@ -44,10 +44,15 @@
         systemfd
         qemu
         aarch64-pkgs.stdenv.cc
+        aarch64-pkgs.alsa-lib
       ];
 
       PKG_CONFIG_ALLOW_CROSS = "1";
+      PKG_CONFIG_PATH = "/usr/lib/aarch64-linux-gnu/pkgconfig";
+      PKG_CONFIG_LIBDIR = "/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig";
       CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = aarch64-cc;
+
+      RUSTFLAGS = "-C link-args=-Wl,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
 
       shellHook = ''
         export PATH=$PATH:$HOME/.cargo/bin
