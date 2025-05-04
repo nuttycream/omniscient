@@ -28,3 +28,8 @@ typedef struct {
     int sensors[4];
 } Shared;
 ```
+
+## attribution
+
+docker image inspo:\
+[friday](https://github.com/JonasRSV/Friday)
