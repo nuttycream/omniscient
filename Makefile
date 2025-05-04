@@ -1,8 +1,8 @@
 PROJ_NAME=omniscient
-TARGET_ARCH=aarch64-unknown-linux-musl
+TARGET_ARCH=aarch64-unknown-linux-gnu
 ROOTNAME=target/$(TARGET_ARCH)/release/$(PROJ_NAME)
 ROOTNAME_DEBUG=target/$(TARGET_ARCH)/debug/$(PROJ_NAME)
-REMOTE_HOST=pi08@192.168.68.70
+REMOTE_HOST=pi70@raspberrypi70.local
 REMOTE_DIR=~/omniscient
 
 build:
@@ -18,10 +18,10 @@ release:
 	cargo build --release --target $(TARGET_ARCH)
 
 qemu: cross-build
-	qemu-aarch64 -L /usr/aarch64-linux-musl $(ROOTNAME_DEBUG)
+	qemu-aarch64 -L /usr/aarch64-linux-gnu $(ROOTNAME_DEBUG)
 
 qemu-release: release
-	qemu-aarch64 -L /usr/aarch64-linux-musl $(ROOTNAME)
+	qemu-aarch64 -L /usr/aarch64-linux-gnu $(ROOTNAME)
 
 clean: 
 	cargo clean
@@ -47,3 +47,5 @@ restart-service:
 
 deploy: remote install-service restart-service
 
+update-assets:
+	rsync -az src/assets/ $(REMOTE_HOST):$(REMOTE_DIR)/assets/

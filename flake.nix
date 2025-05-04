@@ -23,11 +23,11 @@
     aarch64-pkgs = import nixpkgs {
       inherit system;
       crossSystem = {
-        config = "aarch64-unknown-linux-musl";
+        config = "aarch64-unknown-linux-gnu";
       };
     };
 
-    aarch64-cc = "${aarch64-pkgs.stdenv.cc}/bin/aarch64-unknown-linux-musl-cc";
+    aarch64-cc = "${aarch64-pkgs.stdenv.cc}/bin/aarch64-unknown-linux-gnu-cc";
   in {
     overlays.default = final: prev: {
       rustToolchain =
@@ -46,7 +46,8 @@
         aarch64-pkgs.stdenv.cc
       ];
 
-      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER = aarch64-cc;
+      PKG_CONFIG_ALLOW_CROSS = "1";
+      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = aarch64-cc;
 
       shellHook = ''
         export PATH=$PATH:$HOME/.cargo/bin
