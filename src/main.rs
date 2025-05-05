@@ -7,6 +7,7 @@ use std::{
     ops::ControlFlow,
     thread::{self, sleep},
     time::Duration,
+    vec,
 };
 
 use axum::{
@@ -124,6 +125,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Sounds { sounds: vec![] }
     });
 
+    // temp so that i dont ehear the damn chicken
+    let chicken = Sounds { sounds: vec![] };
+
     thread::spawn(move || {
         loop {
             let mut rng = rand::rng();
@@ -138,7 +142,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let app = Router::new()
         .route("/", get(serve_html))
         .route("/style.css", get(serve_css))
-        .route("/htmx.js", get(serve_js))
+        .route("/script.js", get(serve_js))
         .route("/ws", any(handle_websocket));
 
     let mut listenfd = ListenFd::from_env();
@@ -369,6 +373,6 @@ async fn serve_css() -> impl IntoResponse {
 }
 
 async fn serve_js() -> impl IntoResponse {
-    let js = include_str!("./assets/htmx.js");
+    let js = include_str!("./assets/script.js");
     ([(header::CONTENT_TYPE, "application/javascript")], js)
 }
