@@ -47,15 +47,15 @@
         aarch64-pkgs.alsa-lib
       ];
 
-      PKG_CONFIG_ALLOW_CROSS = "1";
-      PKG_CONFIG_PATH = "/usr/lib/aarch64-linux-gnu/pkgconfig";
-      PKG_CONFIG_LIBDIR = "/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig";
-      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = aarch64-cc;
-
-      RUSTFLAGS = "-C link-args=-Wl,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
+      AARCH64_CC = aarch64-cc;
+      AARCH64_PKG_CONFIG_PATH = "/usr/lib/aarch64-linux-gnu/pkgconfig";
+      AARCH64_PKG_CONFIG_LIBDIR = "/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/lib/aarch64-linux-gnu/pkgconfig";
+      AARCH64_RUSTFLAGS = "-C link-args=-Wl,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
 
       shellHook = ''
         export PATH=$PATH:$HOME/.cargo/bin
+        echo "Use 'make build' or 'make run' for native builds"
+        echo "Use 'make cross-build' or 'make release' for cross-compilation"
       '';
     };
   };
