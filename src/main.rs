@@ -5,6 +5,7 @@ use std::{
     error::Error,
     net::SocketAddr,
     ops::ControlFlow,
+    sync::{Arc, atomic::AtomicBool},
     thread::{self, sleep},
     time::Duration,
     vec,
@@ -13,7 +14,7 @@ use std::{
 use axum::{
     Router,
     extract::{
-        WebSocketUpgrade,
+        State, WebSocketUpgrade,
         ws::{Message, WebSocket},
     },
     http::header,
@@ -63,6 +64,11 @@ struct SocketMsg {
     sensors: [i32; 4],
 }
 
+#[derive(Clone)]
+struct AppState {
+    sound: Arc<AtomicBool>,
+}
+
 // goofy ahh sounds
 // randomly play mc
 // chicken sfx
@@ -83,13 +89,29 @@ impl Sounds {
 
         let mut sounds = vec![];
         for path in asset_paths {
-            sounds = get_sounds(path);
+            println!(
+                "Checking for sounds in path: {}",
+                path
+            );
+            let found = get_sounds(path);
+            if !found.is_empty() {
+                sounds = found;
+                break;
+            }
+        }
+
+        if sounds.is_empty() {
+            println!("no sounds found");
         }
 
         Sounds { sounds }
     }
 
     fn play_rand(&self) {
+        if self.sounds.is_empty() {
+            return;
+        }
+
         let sounds = self.sounds.clone();
         thread::spawn(move || {
             if let Err(e) = play_chicken(&sounds) {
@@ -128,12 +150,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let chicken = Sounds::new();
 
     // temp so that i dont ehear the damn chicken
-    let chicken = Sounds { sounds: vec![] };
+    // let chicken = Sounds { sounds: vec![] };
 
+    let state = AppState {
+        sound: Arc::new(AtomicBool::new(true)),
+    };
+
+    let sound_enabled = state.sound.clone();
     thread::spawn(move || {
         loop {
             let mut rng = rand::rng();
-            chicken.play_rand();
+
+            if sound_enabled
+                .load(std::sync::atomic::Ordering::Relaxed)
+            {
+                chicken.play_rand();
+            }
+
             let wait_time = rng.random_range(5..=20);
             for _ in 0..wait_time {
                 thread::sleep(Duration::from_millis(500));
@@ -145,7 +178,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/", get(serve_html))
         .route("/style.css", get(serve_css))
         .route("/script.js", get(serve_js))
-        .route("/ws", any(handle_websocket));
+        .route("/toggle-sound", get(toggle_sound))
+        .route("/ws", any(handle_websocket))
+        .with_state(state);
 
     let mut listenfd = ListenFd::from_env();
     let listener = match listenfd.take_tcp_listener(0)? {
@@ -367,6 +402,23 @@ fn process_message(msg: Message) -> ControlFlow<(), ()> {
         }
         _ => ControlFlow::Continue(()),
     }
+}
+
+async fn toggle_sound(
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let current = state
+        .sound
+        .load(std::sync::atomic::Ordering::Relaxed);
+
+    state.sound.store(
+        !current,
+        std::sync::atomic::Ordering::Relaxed,
+    );
+
+    println!("toggled sound");
+    let status = if !current { "on" } else { "off" };
+    axum::Json(serde_json::json!({ "status": status }))
 }
 
 async fn serve_html() -> Html<&'static str> {

@@ -80,8 +80,6 @@ function update_sensors(sensors) {
     // change sensor style
 }
 
-
-
 document.addEventListener('DOMContentLoaded', () => {
     connect();
     
