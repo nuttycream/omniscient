@@ -965,6 +965,7 @@ dependencies = [
  "rand 0.9.1",
  "rodio",
  "serde",
+ "serde_json",
  "shared_memory",
  "tokio",
 ]
