@@ -38,11 +38,15 @@ function process_msg(msg) {
         }
 
         if (data.bot_mode !== undefined) {
-            document.getElementById('bot-mode').textContent = data.direction;
+            document.getElementById('bot-mode').textContent = data.bot_mode;
         }
 
         if (data.direction !== undefined) {
             document.getElementById('direction').textContent = data.direction;
+        }
+
+        if (data.sensor_mode !== undefined) {
+            document.getElementById('sensor-mode').textContent = data.sensor_mode;
         }
 
         if (data.curr_action !== undefined) {

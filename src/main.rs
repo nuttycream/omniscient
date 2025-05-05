@@ -56,9 +56,10 @@ struct Shared {
 struct SocketMsg {
     direction: String,
     motors: [i32; 3],
-    bot_mode: i32,
+    bot_mode: String,
     curr_action: String,
     obstacle: i32,
+    sensor_mode: String,
     sensors: [i32; 4],
 }
 
@@ -244,11 +245,29 @@ async fn handle_socket(socket: WebSocket) {
 
                         let direction_text =
                             match shared.direction {
-                                0 => "FORWARD",
-                                1 => "BACKWARD",
-                                2 => "STRAFE_LEFT",
-                                3 => "STRAFE_RIGHT",
+                                0 => "Forward",
+                                1 => "Backward",
+                                2 => "Rotate Left",
+                                3 => "Rotate Right",
                                 _ => "STOPPED",
+                            }
+                            .to_string();
+
+                        let sensor_mode =
+                            match shared.sensor_mode {
+                                0 => "4 sensor mapped",
+                                1 => "5 sensor weighted",
+                                2 => "2 sensor simple",
+                                _ => "unknown",
+                            }
+                            .to_string();
+
+                        let bot_mode =
+                            match shared.bot_mode {
+                                0 => "line following",
+                                1 => "obstacle tracking",
+                                2 => "manual control",
+                                _ => "unknown",
                             }
                             .to_string();
 
@@ -256,10 +275,11 @@ async fn handle_socket(socket: WebSocket) {
                             direction: direction_text
                                 .clone(),
                             motors: shared.motor_power,
-                            bot_mode: shared.bot_mode,
+                            bot_mode,
                             curr_action: direction_text,
                             obstacle: shared.obstacle,
                             sensors: shared.sensors,
+                            sensor_mode,
                         };
 
                         let json =

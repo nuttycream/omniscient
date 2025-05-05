@@ -51,6 +51,8 @@ body {
 .info-item {
     margin-bottom: 15px;
     font-size: 1.2rem;
+    display: flex;
+    flex-direction: column;
 }
 
 .robot-display {
