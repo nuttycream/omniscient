@@ -23,6 +23,7 @@ use axum::{
 use futures::{SinkExt, StreamExt};
 use listenfd::ListenFd;
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 use shared_memory::{Shmem, ShmemConf};
 use sound::{get_sounds, play_chicken};
 use std::mem::size_of;
@@ -51,6 +52,16 @@ struct Shared {
     sensors: [i32; 4],
 }
 
+#[derive(Serialize, Deserialize)]
+struct SocketMsg {
+    direction: String,
+    motors: [i32; 3],
+    bot_mode: i32,
+    curr_action: String,
+    obstacle: i32,
+    sensors: [i32; 4],
+}
+
 // goofy ahh sounds
 // randomly play mc
 // chicken sfx
@@ -59,10 +70,22 @@ struct Sounds {
 }
 
 impl Sounds {
-    fn new(assets: &str) -> Self {
-        let sounds = get_sounds(assets);
-        println!("got them sounds boss");
-        Self { sounds }
+    fn new() -> Self {
+        // multiple asset paths
+        // because ynaut
+        let asset_paths = vec![
+            "src/assets",
+            "assets",
+            "../assets",
+            "./assets",
+        ];
+
+        let mut sounds = vec![];
+        for path in asset_paths {
+            sounds = get_sounds(path);
+        }
+
+        Sounds { sounds }
     }
 
     fn play_rand(&self) {
@@ -101,29 +124,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or(3001);
     let addr = format!("0.0.0.0:{port}");
 
-    // multiple asset paths
-    // because ynaut
-    let asset_paths = vec![
-        "src/assets",
-        "assets",
-        "../assets",
-        "./assets",
-    ];
-
-    let mut chicken = None;
-    for path in asset_paths {
-        let sounds = get_sounds(path);
-        if !sounds.is_empty() {
-            chicken = Some(Sounds { sounds });
-            println!("Using assets from: {}", path);
-            break;
-        }
-    }
-
-    let chicken = chicken.unwrap_or_else(|| {
-        println!("WARNING: No chicken sounds found!");
-        Sounds { sounds: vec![] }
-    });
+    let chicken = Sounds::new();
 
     // temp so that i dont ehear the damn chicken
     let chicken = Sounds { sounds: vec![] };
@@ -248,38 +249,24 @@ async fn handle_socket(socket: WebSocket) {
                                 2 => "STRAFE_LEFT",
                                 3 => "STRAFE_RIGHT",
                                 _ => "STOPPED",
-                            };
-
-                        let msgs = vec![
-                            // <div id="target" hx-swap-ws="innerHTML">value</div>
-                            format!(
-                                "<div id=\"direction\" hx-swap-ws=\"innerHTML\">{}</div>",
-                                direction_text
-                            ),
-                            format!(
-                                "<div id=\"obstacle\" hx-swap-ws=\"innerHTML\">{}</div>",
-                                shared.obstacle
-                            ),
-                            format!(
-                                "<div id=\"motorA\" hx-swap-ws=\"innerHTML\">{}</div>",
-                                shared.motor_power[0]
-                            ),
-                            format!(
-                                "<div id=\"motorB\" hx-swap-ws=\"innerHTML\">{}</div>",
-                                shared.motor_power[1]
-                            ),
-                            format!(
-                                "<div id=\"motorC\" hx-swap-ws=\"innerHTML\">{}</div>",
-                                shared.motor_power[2]
-                            ),
-                        ];
-                        for msg in msgs {
-                            if tx
-                                .blocking_send(msg)
-                                .is_err()
-                            {
-                                return;
                             }
+                            .to_string();
+
+                        let msg = SocketMsg {
+                            direction: direction_text
+                                .clone(),
+                            motors: shared.motor_power,
+                            bot_mode: shared.bot_mode,
+                            curr_action: direction_text,
+                            obstacle: shared.obstacle,
+                            sensors: shared.sensors,
+                        };
+
+                        let json =
+                            serde_json::to_string(&msg)
+                                .unwrap_or_default();
+                        if tx.blocking_send(json).is_err() {
+                            return;
                         }
                     }
                 } else {

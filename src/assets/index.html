@@ -6,21 +6,28 @@
         <title>omniscient</title>
         <link href="style.css" rel="stylesheet">
     </head>
-    <body hx-ext="ws" ws-connect="/ws">
+    <body>
         <div class="container">
             <div class="info-panel">
                 <h2>omni chicken info</h2>
+                <div class="info-item">shared mem: 
+                    <span id="mem">closed</span>
+                </div>
                 <div class="info-item">bot mode: 
-                    <span id="mode">line follow</span>
+                    <span id="bot-mode">line follow</span>
                 </div>
                 <div class="info-item">direction: 
-                    <span id="mode">straight</span>
+                    <span id="direction">straight</span>
                 </div>
                 <div class="info-item">last action: 
                     <span id="curr-action">straight</span>
                 </div>
+                <div class="info-item">sound: 
+                    <span id="sound">on</span>
+                    <button type="submit">toggle</button>
+                </div>
 
-                <button type="submit">toggle sound</button>
+                <hr>
 
                 <div class="legend">
                     <div class="legend-item">
@@ -41,7 +48,7 @@
                             border-radius: 5px;">
                         </div>
                         <div class="legend-text">obstacle sensor</div>
-                    </div>
+                        </div>
                     <div class="legend-item">
                         <div class="legend-icon" 
                             style="width: 20px; 
