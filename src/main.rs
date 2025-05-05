@@ -64,6 +64,8 @@ struct SocketMsg {
     sensors: [i32; 4],
 }
 
+// CLONE EVERYTHING
+// I DONT CARE ANYMMKOREOOOORE
 #[derive(Clone)]
 struct AppState {
     sound: Arc<AtomicBool>,

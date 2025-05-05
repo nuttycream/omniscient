@@ -14,9 +14,10 @@ pub fn get_sounds(assets: &str) -> Vec<String> {
 
     for entry in entries.filter_map(Result::ok) {
         let path = entry.path();
-        let is_chicken_sound = path
-            .extension()
-            .is_some_and(|ext| ext == "ogg");
+        let is_chicken_sound =
+            path.extension().is_some_and(|ext| {
+                ext == "ogg" || ext == "mp3"
+            });
 
         if is_chicken_sound {
             sounds
