@@ -133,9 +133,14 @@ body {
     background-color: #42a5f5;
     border: 1px solid #1976d2;
     border-radius: 5px;
-    top: -15px;
+    top: -70px;
     left: 50%;
     transform: translateX(-50%) translateY(-100%);
+}
+
+.obstacle-sensor.found {
+    background-color: var(--danger);
+    border-color: var(--danger-hover);
 }
 
 .sensor-container {
@@ -145,22 +150,22 @@ body {
 }
 
 .front-sensor-1 {
-    top: 20px;
+    top: -25px;
     left: 90px;
 }
 
 .front-sensor-2 {
-    top: -5px;
+    top: -50px;
     left: 145px;
 }
 
 .front-sensor-3 {
-    top: -5px;
+    top: -50px;
     right: 145px;
 }
 
 .front-sensor-4 {
-    top: 20px;
+    top: -25px;
     right: 90px;
 }
 

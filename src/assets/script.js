@@ -53,8 +53,12 @@ function process_msg(msg) {
             document.getElementById('curr-action').textContent = data.curr_action;
         }
 
-         if (data.obstacle !== undefined) {
-            // should change style
+        if (data.obstacle !== undefined) {
+            if (data.obstacle === 0) {
+                document.getElementById('obstacle').classList.remove('found');
+            } else {
+                document.getElementById('obstacle').classList.add('found');
+            }
         }
         
         if (data.motors !== undefined) {
@@ -77,7 +81,17 @@ function update_wheels(motors) {
 }
 
 function update_sensors(sensors) {
-    // change sensor style
+    const frontSensors = document.querySelectorAll('.front-line-sensor');
+    
+    for (let i = 0; i < frontSensors.length && i < sensors.length; i++) {
+        if (sensors[i] === 1) {
+            frontSensors[i].classList.add('sensor-active');
+            frontSensors[i].classList.remove('sensor-inactive');
+        } else {
+            frontSensors[i].classList.add('sensor-inactive');
+            frontSensors[i].classList.remove('sensor-active');
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
