@@ -58,4 +58,4 @@ restart-service:
 deploy: remote install-service restart-service
 
 update-assets:
-	rsync -az src/assets/ $(REMOTE_HOST):$(REMOTE_DIR)/assets/
+	rsync -az --mkpath src/assets/ $(REMOTE_HOST):$(REMOTE_DIR)/assets/
