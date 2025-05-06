@@ -17,17 +17,23 @@ flowchart TD
     end
     
     subgraph sharedMem["Shared Memory"]
-        shared[Shared Struct\nversion\ndirection\nmotor_power\nbot_mode\nobstacle\nline sensors]
+        shared["Shared Struct
+        - version
+        - direction
+        - motor_power
+        - bot_mode
+        - obstacle
+        - line sensors"]
     end
     
     subgraph omniscient["omniscient (Rust)"]
-        direction TB
-        webApp[Web Interface] --> sound[Sound System]
+        webApp[Web Interface]
+        webApp --> sound[Sound System]
         webApp --> wsServer[WebSocket Server]
     end
     
-    omnibot -->|writes| sharedMem
-    omniscient -->|reads| sharedMem
+    omnibot -->|writes| shared
+    omniscient -.->|reads| shared
     wsServer -->|updates| browser((Browser))
     
     classDef cCode fill:#5c8dbc,color:#fff,stroke:#000
