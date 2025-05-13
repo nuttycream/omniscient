@@ -1,12 +1,12 @@
 [Unit]
 Description=Omniscient
-After=network.target
+After=network.target omniloop.service
 
 [Service]
 ExecStart=/home/pi70/omniscient/omniscient
 Restart=always
 Type=simple
-User=root
+User=pi70
 WorkingDirectory=/home/pi70/omniscient
 
 [Install]

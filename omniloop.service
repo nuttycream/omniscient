@@ -1,0 +1,14 @@
+[Unit]
+Description=chmod loop for omnigod oh god
+After=network.target
+Before=omniscient.service
+
+[Service]
+ExecStart=/home/pi70/omniscient/omniloop.sh
+Restart=always
+Type=simple
+User=root
+WorkingDirectory=/home/pi70/omniscient
+
+[Install]
+WantedBy=multi-user.target

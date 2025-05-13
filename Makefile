@@ -4,6 +4,7 @@ ROOTNAME=target/$(TARGET_ARCH)/release/$(PROJ_NAME)
 ROOTNAME_DEBUG=target/$(TARGET_ARCH)/debug/$(PROJ_NAME)
 REMOTE_HOST=pi70@raspberrypi70.local
 REMOTE_DIR=~/omniscient
+SSH_OPTS=-o ControlMaster=auto -o ControlPath=/tmp/ssh-control-%r@%h:%p -o ControlPersist=yes
 
 build:
 	cargo build
@@ -39,23 +40,54 @@ clean:
 remote: release
 	rsync -az $(ROOTNAME) $(REMOTE_HOST):$(REMOTE_DIR)/
 
+update-assets:
+	rsync -az --mkpath src/assets/ $(REMOTE_HOST):$(REMOTE_DIR)/assets/
+
+ssh-open:
+	ssh -M $(SSH_OPTS) $(REMOTE_HOST) "connected"
+
+install-services: ssh-open
+	rsync -az omniscient.service omniloop.service omniloop.sh $(REMOTE_HOST):$(REMOTE_DIR)/
+	ssh $(SSH_OPTS) $(REMOTE_HOST) "\
+		sudo chmod +x $(REMOTE_DIR)/omniloop.sh && \
+		sudo cp $(REMOTE_DIR)/omniscient.service /etc/systemd/system/ && \
+		sudo cp $(REMOTE_DIR)/omniloop.service /etc/systemd/system/ && \
+		sudo systemctl daemon-reload"
+
+enable-services: ssh-open
+	ssh $(SSH_OPTS) $(REMOTE_HOST) "\
+		sudo systemctl enable omniloop.service && \
+		sudo systemctl enable omniscient.service"
+
+start-services: ssh-open
+	ssh $(SSH_OPTS) $(REMOTE_HOST) "\
+		sudo systemctl start omniloop.service && \
+		sudo systemctl start omniscient.service"
+
+restart-services: ssh-open
+	ssh $(SSH_OPTS) $(REMOTE_HOST) "\
+		sudo systemctl restart omniloop.service && \
+		sudo systemctl restart omniscient.service"
+
+stop-services: ssh-open
+	ssh $(SSH_OPTS) $(REMOTE_HOST) "\
+		sudo systemctl stop omniscient.service && \
+		sudo systemctl stop omniloop.service"
+
+service-status: ssh-open
+	ssh $(SSH_OPTS) $(REMOTE_HOST) "\
+		sudo systemctl status omniloop.service && \
+		sudo systemctl status omniscient.service"
+
+deploy: remote install-services enable-services restart-services
+	@echo "Deployment complete! Use 'make service-status' to check service status."
+
 watch:
 	systemfd --no-pid -s http::3001 -- cargo watch -w src/ -x run
 
-install-service:
-	rsync -az omniscient.service $(REMOTE_HOST):$(REMOTE_DIR)/
-	ssh $(REMOTE_HOST) "sudo cp $(REMOTE_DIR)/omniscient.service /etc/systemd/system/ && sudo systemctl daemon-reload"
+ssh-close:
+	ssh -O exit $(REMOTE_HOST) 2>/dev/null || true
 
-enable-service:
-	ssh $(REMOTE_HOST) "sudo systemctl enable omniscient.service"
-
-start-service:
-	ssh $(REMOTE_HOST) "sudo systemctl start omniscient.service"
-
-restart-service:
-	ssh $(REMOTE_HOST) "sudo systemctl restart omniscient.service"
-
-deploy: remote install-service restart-service
-
-update-assets:
-	rsync -az --mkpath src/assets/ $(REMOTE_HOST):$(REMOTE_DIR)/assets/
+.PHONY: build run cross-build release qemu qemu-release clean remote watch \
+	ssh-open ssh-close install-services enable-services start-services \
+	restart-services stop-services service-status deploy update-assets
