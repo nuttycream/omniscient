@@ -149,24 +149,29 @@ body {
     height: 100%;
 }
 
-.front-sensor-1 {
+.front-sensor-0 {
     top: -25px;
     left: 90px;
 }
 
-.front-sensor-2 {
+.front-sensor-1 {
     top: -50px;
     left: 145px;
 }
 
-.front-sensor-3 {
+.front-sensor-2 {
     top: -50px;
     right: 145px;
 }
 
-.front-sensor-4 {
+.front-sensor-3 {
     top: -25px;
     right: 90px;
+}
+
+.front-sensor-4 {
+    top: -25px;
+    right: 180px;
 }
 
 .edge-sensor-left {

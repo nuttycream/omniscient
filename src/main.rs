@@ -45,12 +45,13 @@ struct Shared {
     bot_mode: i32,
 
     obstacle: i32,
+    obstacle_mode: i32,
 
     go_left: i32,
     go_right: i32,
     sensor_mode: i32,
 
-    sensors: [i32; 4],
+    sensors: [i32; 5],
 }
 
 #[derive(Serialize, Deserialize)]
@@ -60,8 +61,9 @@ struct SocketMsg {
     bot_mode: String,
     curr_action: String,
     obstacle: i32,
+    obstacle_mode: String,
     sensor_mode: String,
-    sensors: [i32; 4],
+    sensors: [i32; 5],
 }
 
 // CLONE EVERYTHING
@@ -308,6 +310,14 @@ async fn handle_socket(socket: WebSocket) {
                             }
                             .to_string();
 
+                        let obstacle_mode =
+                            match shared.obstacle_mode {
+                                0 => "obstacle tracking",
+                                1 => "obstacle avoidance",
+                                _ => "unknown",
+                            }
+                            .to_string();
+
                         let msg = SocketMsg {
                             direction: direction_text
                                 .clone(),
@@ -315,6 +325,7 @@ async fn handle_socket(socket: WebSocket) {
                             bot_mode,
                             curr_action: direction_text,
                             obstacle: shared.obstacle,
+                            obstacle_mode,
                             sensors: shared.sensors,
                             sensor_mode,
                         };

@@ -60,6 +60,10 @@ function process_msg(msg) {
                 document.getElementById('obstacle').classList.add('found');
             }
         }
+
+        if (data.obstacle_mode !== undefined) {
+            document.getElementById('obstacle-mode').textContent = data.obstacle_mode;
+        }
         
         if (data.motors !== undefined) {
             update_wheels(data.motors);
